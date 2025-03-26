@@ -16,9 +16,16 @@ import torch.utils.data.dataset
 import torch.nn.functional as F
 from tqdm import tqdm
 import os
+import random
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
+import csv
+from torch.utils.tensorboard import SummaryWriter
+from sklearn.metrics import average_precision_score
 import matplotlib.pyplot as plt
+
+from SEResNet10 import SEResNet10
+from TransformedSubset import TransformedSubset
 
 path = "./Aerial_Landscapes"
 count = 1
@@ -27,27 +34,51 @@ while os.path.exists(f"runs/train{count}"):
 os.makedirs(f"runs/train{count}", exist_ok=False)
 
 
-# Add random noise to images in the training set
-class AddNoise:
-    def __init__(self, mean=0.0, std=0.1):
-        self.mean = mean
-        self.std = std
+class RandomMask(nn.Module):
+    def __init__(self, num_blocks=3, block_size=50, p=0.5):
+        super().__init__()
+        self.num_blocks = num_blocks
+        self.block_size = block_size
+        self.p = p
 
-    def __call__(self, img):
-        noise = torch.randn(img.size()) * self.std + self.mean
-        noisy_img = img + noise
-        return torch.clamp(noisy_img, 0.0, 1.0)
+    def forward(self, img):
+        if random.random() < self.p:
+            # 获取Tensor格式的尺寸
+            c, h, w = img.shape
+            
+            for _ in range(self.num_blocks):
+                # random block position
+                x = random.randint(0, h - self.block_size)
+                y = random.randint(0, w - self.block_size)
+                
+                # random mask type
+                mask_type = random.choice([0, 1, 2])
+                
+                if mask_type == 0:  # gray block
+                    img[:, x:x+self.block_size, y:y+self.block_size] = 0.5 # 0.5是灰色
+                elif mask_type == 1:  # random noise
+                    noise = torch.rand_like(img[:, x:x+self.block_size, y:y+self.block_size])
+                    img[:, x:x+self.block_size, y:y+self.block_size] = noise
+                else: # 不操作
+                    pass
+        return img
 
+# Define the transformations for the training sets
 train_transform = transforms.Compose([
-    transforms.Resize((256, 256)),
+    # PIL
     transforms.RandomResizedCrop(256),
     transforms.RandomHorizontalFlip(),
-    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-    transforms.RandomRotation(45),
+    transforms.ColorJitter(0.2, 0.2, 0.2),
+    transforms.RandomRotation(15),
+    
     transforms.ToTensor(),
-    # AddNoise(mean=0.0, std=0.1),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225])
+    
+    # Augmentations for Tensor
+    RandomMask(num_blocks=2, block_size=32, p=0.5),
+    transforms.RandomErasing(p=0.3),
+    
+    transforms.Normalize([0.485, 0.456, 0.406], 
+                        [0.229, 0.224, 0.225])
 ])
 
 generic_transform = transforms.Compose([
@@ -66,22 +97,10 @@ test_size = dataset_size - train_size - val_size
 
 train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
 
-class TransformedSubset(torch.utils.data.Dataset):
-    def __init__(self, subset, transform):
-        self.subset = subset
-        self.transform = transform
 
-    def __getitem__(self, index):
-        X, y = self.subset[index]
-        if self.transform:
-            X = self.transform(X)
-        return X, y
-
-    def __len__(self):
-        return len(self.subset)
 
 # Apply the transforms to the datasets
-train_dataset = TransformedSubset(train_dataset, generic_transform)
+train_dataset = TransformedSubset(train_dataset, train_transform)
 val_dataset = TransformedSubset(val_dataset, generic_transform)
 test_dataset = TransformedSubset(test_dataset, generic_transform)
 
@@ -106,86 +125,13 @@ save_samples(val_dataset, "Validation Set Samples", "val_samples")
 save_samples(test_dataset, "Test Set Samples", "test_samples")
 
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=4)
-val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=4)
+val_loader = DataLoader(val_dataset, batch_size=64, shuffle=True, num_workers=4)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=4)
 
-class SEBlock(nn.Module):
-    # SENet
-    def __init__(self, channel, reduction=16):
-        super().__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.fc = nn.Sequential(
-            nn.Linear(channel, channel // reduction),
-            nn.SiLU(inplace=True),
-            nn.Linear(channel // reduction, channel),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        b, c, _, _ = x.size()
-        y = self.avg_pool(x).view(b, c)
-        y = self.fc(y).view(b, c, 1, 1)
-        return x * y
-
-class ResBlock(nn.Module):
-    """ Residual Block with SE """
-    def __init__(self, in_channels, out_channels, stride=1):
-        super().__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, 
-                               stride=stride, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3,
-                               padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.se = SEBlock(out_channels)
-        
-        self.shortcut = nn.Sequential()
-        if stride != 1 or in_channels != out_channels:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=1,
-                          stride=stride, bias=False),
-                nn.BatchNorm2d(out_channels)
-            )
-
-    def forward(self, x):
-        out = F.silu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        out = self.se(out)
-        out += self.shortcut(x)
-        return F.silu(out)
-
-class OptimizedCNN(nn.Module):
-    def __init__(self, num_classes=15):
-        super().__init__()
-        self.features = nn.Sequential(
-            # Initial convolution
-            nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False),
-            nn.BatchNorm2d(64),
-            nn.SiLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-            
-            # Residual blocks
-            ResBlock(64, 64),
-            ResBlock(64, 128, stride=2),
-            ResBlock(128, 256, stride=2),
-            ResBlock(256, 512, stride=2),
-            
-            # Final layers
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Dropout(0.3)
-        )
-        
-        self.classifier = nn.Linear(512, num_classes)
-
-    def forward(self, x):
-        x = self.features(x)
-        x = x.view(x.size(0), -1)
-        return self.classifier(x)
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = OptimizedCNN(num_classes=15).to(device)
+model = SEResNet10(num_classes=15).to(device)
 criterion = nn.CrossEntropyLoss()
-num_epochs = 100
+num_epochs = 65
 # optimizer
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
 # optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0005, nesterov=True) # Yolo v11's parameter, I do not know why, dont modify it, it is perfect
@@ -197,9 +143,18 @@ print(f"Total number of parameters: {total_params}")
 
 
 os.makedirs(f"runs/train{count}/models", exist_ok=True)
+# TensorBoard writer
+writer = SummaryWriter(log_dir=f"runs/train{count}/logs")
+
+csv_file = f"runs/train{count}/training_log.csv"
+with open(csv_file, mode='w', newline='') as file:
+    csv_writer = csv.writer(file)
+    csv_writer.writerow(["Epoch", "Training Loss", "Validation Accuracy"])
+
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
+    best_accuracy = 0.0
     progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}", unit="batch")
     for images, labels in progress_bar:
         images = images.to(device)
@@ -215,57 +170,80 @@ for epoch in range(num_epochs):
         progress_bar.set_postfix(loss=loss.item())
 
     epoch_loss = running_loss / train_size
-    # print(f"Epoch {epoch+1}/{num_epochs}, Training Loss: {epoch_loss:.4f}")
+    
 
     model.eval()
     correct = 0
     total = 0
+
     with torch.no_grad():
         for images, labels in val_loader:
             images = images.to(device)
             labels = labels.to(device)
             outputs = model(images)
             _, predicted = torch.max(outputs, 1)
+            probs = F.softmax(outputs, dim=1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-    accuracy = 100 * correct / total
-    print(f"Validation Accuracy: {accuracy:.2f}%")
-    
-    # Save confusion matrix for validation set
 
-    all_labels = []
-    all_predictions = []
+    accuracy = 100 * correct / total
+
+    # Calculate validation loss
+    val_loss = 0.0
     with torch.no_grad():
         for images, labels in val_loader:
             images = images.to(device)
             labels = labels.to(device)
             outputs = model(images)
-            _, predicted = torch.max(outputs, 1)
-            all_labels.extend(labels.cpu().numpy())
-            all_predictions.extend(predicted.cpu().numpy())
+            loss = criterion(outputs, labels)
+            val_loss += loss.item() * images.size(0)
+    val_loss /= val_size
 
-    cm = confusion_matrix(all_labels, all_predictions)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Greens', xticklabels=dataset.classes, yticklabels=dataset.classes)
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.title(f'Confusion Matrix for Validation Set (Epoch {epoch+1})')
-    plt.savefig(f'runs/train{count}/confusion_matrix_val_epoch_{epoch+1}.png')
-    plt.close()
+    writer.add_scalar("Accuracy/Validation", accuracy, epoch)
+    writer.add_scalar("Loss/Training", epoch_loss, epoch)
+    writer.add_scalar("Loss/Validation", val_loss, epoch)
 
-    # Save model weights
-    torch.save(model.state_dict(), f'runs/train{count}/models/model_epoch_{epoch+1}_{accuracy:.2f}.pth')
+    # Log metrics to CSV
+    with open(csv_file, mode='a', newline='') as file:
+        csv_writer = csv.writer(file)
+        csv_writer.writerow([epoch + 1, epoch_loss, accuracy])
+
+    print(f"Validation Accuracy: {accuracy:.2f}%")
+
+    if accuracy > best_accuracy:
+        best_accuracy = accuracy
+        torch.save(model.state_dict(), f'runs/train{count}/models/best_model.pth')
+
+    # Save model weights every 10 epochs
+    if (epoch + 1) % 10 == 0:
+        torch.save(model.state_dict(), f'runs/train{count}/models/model_epoch_{epoch+1}_{accuracy:.2f}.pth')
+
+writer.close()
 
 model.eval()
 correct_test = 0
 total_test = 0
+all_labels = []
+all_predictions = []
+
 with torch.no_grad():
     for images, labels in test_loader:
         images = images.to(device)
         labels = labels.to(device)
         outputs = model(images)
         _, predicted = torch.max(outputs, 1)
+        all_labels.extend(labels.cpu().numpy())
+        all_predictions.extend(predicted.cpu().numpy())
         total_test += labels.size(0)
         correct_test += (predicted == labels).sum().item()
+
 test_accuracy = 100 * correct_test / total_test
 print(f"Test Accuracy: {test_accuracy:.2f}%")
+cm = confusion_matrix(all_labels, all_predictions)
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Greens', xticklabels=dataset.classes, yticklabels=dataset.classes)
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.title(f'Confusion Matrix for Validation Set (Epoch {epoch+1})')
+plt.savefig(f'runs/train{count}/confusion_matrix_val_epoch_{epoch+1}.png')
+plt.close()
