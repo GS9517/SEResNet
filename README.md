@@ -34,9 +34,9 @@ Input → Linear → SiLU → Linear → Sigmoid → Output
 ## References
 
 1. He, K., Zhang, X., Ren, S. and Sun, J. (2015) 'Deep Residual Learning for Image Recognition'. arXiv preprint arXiv:1512.03385. Available at: https://arxiv.org/abs/1512.03385 [Accessed 27 Mar. 2025].
-<br>
+
 2. Liu, Y., Cheng, M. and Lapata, M. (2017) *Learning Structured Text Representations*. arXiv preprint arXiv:1709.01507v4. Available at: https://arxiv.org/abs/1709.01507v4 [Accessed 27 Mar. 2025].
-<br>
+
 3. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, L. and Polosukhin, I. (2017) 'Attention is All You Need'. arXiv preprint arXiv:1706.03762. Available at: https://arxiv.org/abs/1706.03762 [Accessed 27 Mar. 2025].
-<br>
+
 4. Zhang, D., Liu, H., Yang, Y., Wang, H., Liang, Y., Ye, Z., Qin, Z., Huang, T.S. and Zhuang, Y. (2018) 'Neural machine translation with deep attention'. Neural Networks, 100, pp. 24-35. doi: 10.1016/j.neunet.2017.12.010.
