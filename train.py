@@ -21,7 +21,6 @@ from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import csv
 from torch.utils.tensorboard import SummaryWriter
-from sklearn.metrics import average_precision_score
 import matplotlib.pyplot as plt
 
 from SEResNet10 import SEResNet10
@@ -67,16 +66,17 @@ class RandomMask(nn.Module):
 train_transform = transforms.Compose([
     # PIL
     transforms.RandomResizedCrop(256),
-    transforms.RandomHorizontalFlip(),
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomVerticalFlip(p=0.5),
     transforms.ColorJitter(0.2, 0.2, 0.2),
+    # transforms.RandomPerspective(distortion_scale=0.5, p=1.0), 
+    # 别开这个选项 模型完全没有空间感知能力 开了包炸的
     transforms.RandomRotation(15),
     
     transforms.ToTensor(),
-    
     # Augmentations for Tensor
     RandomMask(num_blocks=2, block_size=32, p=0.5),
     transforms.RandomErasing(p=0.3),
-    
     transforms.Normalize([0.485, 0.456, 0.406], 
                         [0.229, 0.224, 0.225])
 ])
@@ -96,8 +96,6 @@ val_size = int(0.1 * dataset_size)
 test_size = dataset_size - train_size - val_size
 
 train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
-
-
 
 # Apply the transforms to the datasets
 train_dataset = TransformedSubset(train_dataset, train_transform)
@@ -131,7 +129,7 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = SEResNet10(num_classes=15).to(device)
 criterion = nn.CrossEntropyLoss()
-num_epochs = 65
+num_epochs = 150
 # optimizer
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
 # optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0005, nesterov=True) # Yolo v11's parameter, I do not know why, dont modify it, it is perfect
@@ -139,6 +137,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
 # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(0.3*num_epochs), int(0.6* num_epochs), int(0.9*num_epochs)], gamma=0.1)
 # Print the total number of parameters in the modeld
 total_params = sum(p.numel() for p in model.parameters())
+
 print(f"Total number of parameters: {total_params}")
 
 
@@ -208,7 +207,7 @@ for epoch in range(num_epochs):
         csv_writer = csv.writer(file)
         csv_writer.writerow([epoch + 1, epoch_loss, accuracy])
 
-    print(f"Validation Accuracy: {accuracy:.2f}%")
+    print(f"Validation: Accuracy: {accuracy:.2f}%, Loss: {val_loss:.2f}")
 
     if accuracy > best_accuracy:
         best_accuracy = accuracy

@@ -37,8 +37,8 @@ test_dataset = TransformedSubset(test_dataset, generic_transform)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=4)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = SEResNet10(num_classes=15).to(device)
-model.load_state_dict(torch.load('runs/train3/models/best_model.pth'))
+model = SEResNet10(num_classes=15)
+model = torch.load('weights/best.pt', weights_only=False).to(device)
 model.eval()
 correct_test = 0
 total_test = 0

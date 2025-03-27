@@ -1,0 +1,7 @@
+torch==2.6.0+cu126
+torchvision==0.21.0+cu126
+scikit-learn==1.6.1
+seaborn==0.13.2
+matplotlib==3.10.1
+tqdm==4.67.1
+tensorboard==2.19.0
