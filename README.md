@@ -21,6 +21,31 @@ Comparation with YOLO11-cls:
 |YOLO11n-cls|224x224|~ 89.4%                |1.6M |0.5B |
 |YOLO11s-cls|224x224|~ 92.7%                |5.5M |1.6B |
 
+## How to Use
+
+### Install Requirements
+```shell
+$ pip install -r requirements.txt
+```
+
+### Train
+```shell
+$ python3 train.py [-a | --augmentatioin] [-u | --unbalanced-dataset] [-h | --help]
+```
+`[-a | --augmentation]`: enable data augmentation
+
+`[-u | --unbalanced-dataset]`: enable unbalanced dataset
+
+`[-h | --help]`: print help menu
+
+A running outcome will be generated under `./run/trainXX`
+
+### Test
+```shell
+$ python3 test.py
+```
+A running outcome will be generated under `./run/testXX`
+
 ## Arch
 ### SEBlock
 Input → Linear → SiLU → Linear → Sigmoid → Output
