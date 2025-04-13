@@ -38,7 +38,7 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = SEResNet10(num_classes=15)
-model = torch.load('weights/best.pt', weights_only=False).to(device)
+model = torch.load('runs/train2_without_data_augmentation/models/best_model.pth', weights_only=False).to(device)
 model.eval()
 correct_test = 0
 total_test = 0
