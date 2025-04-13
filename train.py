@@ -7,12 +7,12 @@ from getopt import getopt
 
 dataAugmentation = False
 unbalancedDataset = False
- 
+
 try:
     opts, args = getopt(sys.argv[1:], "auh",  
                               ["augmentation",
                                "unbalanced-dataset",
-                               "help"])  # 长选项模式
+                               "help"])
 except:
     print("Usage: train.py -h [--help] -a [--augmentation] -u [--unbalanced-dataset]")
     sys.exit(1)
@@ -49,29 +49,35 @@ import torchvision.datasets as datasets
 '''
 Auxiliary tools
 '''
-import csv
 from tqdm import tqdm
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
-from sklearn.utils import resample
-
+from collections import Counter
+import kagglehub
 '''
 User defined classes
 '''
 from SEResNet10 import SEResNet10
 from TransformedSubset import TransformedSubset
 from modify_subset import create_unbalanced_dataset
-from collections import Counter
 
-path = "./Aerial_Landscapes"
+
+path = kagglehub.dataset_download("ankit1743/skyview-an-aerial-landscape-dataset", force_download=True) 
+path += "/Aerial_Landscapes"
+if not os.path.exists(path):
+    print("Dataset was not downloaded. this is an error of kagglehub.")
+else:
+    print(f"Dataset downloaded to {path}.")
+
+
 count = 1
 while os.path.exists(f"runs/train{count}"):
     count += 1
 os.makedirs(f"runs/train{count}", exist_ok=False)
 
 if unbalancedDataset:
-    create_unbalanced_dataset()
+    create_unbalanced_dataset(path)
     path = "./Aerial_Landscapes_Unbalanced"
 
 

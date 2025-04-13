@@ -3,8 +3,8 @@ import shutil
 import random
 from pathlib import Path
 
-def create_unbalanced_dataset():
-    source_dir = Path("Aerial_Landscapes")
+def create_unbalanced_dataset(original_path):
+    source_dir = Path(original_path)
     target_dir = Path("Aerial_Landscapes_Unbalanced")
 
     if target_dir.exists():

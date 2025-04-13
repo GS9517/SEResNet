@@ -24,6 +24,7 @@ Comparation with YOLO11-cls:
 ## How to Use
 
 ### Install Requirements
+
 ```shell
 $ pip install -r requirements.txt
 ```
@@ -45,6 +46,12 @@ A running outcome will be generated under `./run/trainXX`
 $ python3 test.py
 ```
 A running outcome will be generated under `./run/testXX`
+
+### Detect
+```shell
+$ python3 detect.py <image_path> <weights_path>
+```
+Weights file can be found at the repo's release.
 
 ## Arch
 ### SEBlock
