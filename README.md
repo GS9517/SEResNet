@@ -36,10 +36,20 @@ Input → Linear → SiLU → Linear → Sigmoid → Output
 
 ## References
 
-1. He, K., Zhang, X., Ren, S. and Sun, J. (2015) 'Deep Residual Learning for Image Recognition'. arXiv preprint arXiv:1512.03385. Available at: https://arxiv.org/abs/1512.03385 [Accessed 27 Mar. 2025].
+[1]	Elfwing, S., Uchibe, E. & Doya, K. 2018, 'Sigmoid-weighted linear units for neural network function approximation in reinforcement learning', Neurocomputing, vol. 298, pp. 166-174, doi: 10.1016/j.neucom.2018.01.063.
 
-2. Liu, Y., Cheng, M. and Lapata, M. (2017) *Learning Structured Text Representations*. arXiv preprint arXiv:1709.01507v4. Available at: https://arxiv.org/abs/1709.01507v4 [Accessed 27 Mar. 2025].
+[2]	Helmholtz, H. 1867, Handbuch der physiologischen Optik, Voss.
 
-3. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, L. and Polosukhin, I. (2017) 'Attention is All You Need'. arXiv preprint arXiv:1706.03762. Available at: https://arxiv.org/abs/1706.03762 [Accessed 27 Mar. 2025].
+[3]	He, K., Zhang, X., Ren, S. and Sun, J. (2015) 'Deep Residual Learning for Image Recognition'. arXiv preprint arXiv:1512.03385. Available at: https://arxiv.org/abs/1512.03385 [Accessed 27 Mar. 2025]. 
 
-4. Zhang, D., Liu, H., Yang, Y., Wang, H., Liang, Y., Ye, Z., Qin, Z., Huang, T.S. and Zhuang, Y. (2018) 'Neural machine translation with deep attention'. Neural Networks, 100, pp. 24-35. doi: 10.1016/j.neunet.2017.12.010.
+[4]	Hu, J., Shen, L., Albanie, S., Sun, G. & Wu, E. 2018, 'Squeeze-and-Excitation Networks', IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 42, no. 8, pp. 2011-2023, doi: 10.1109/TPAMI.2019.2913372.
+
+[5]	LeCun, Y., Bottou, L., Bengio, Y. & Haffner, P. 1998, 'Gradient-based learning applied to document recognition', Proceedings of the IEEE, vol. 86, no. 11, pp. 2278-2324, doi: 10.1109/5.726791.
+
+[6]	Liu, Y., Cheng, M. and Lapata, M. (2017) Learning Structured Text Representations. arXiv preprint arXiv:1709.01507v4. Available at: https://arxiv.org/abs/1709.01507v4 [Accessed 27 Mar. 2025].
+
+[7]	Marr, D. 1982, Vision: A computational investigation into the human representation and processing of visual information, W.H. Freeman and Company.
+
+[8]	Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, L. and Polosukhin, I. (2017) 'Attention is All You Need'. arXiv preprint arXiv:1706.03762. Available at: https://arxiv.org/abs/1706.03762 [Accessed 27 Mar. 2025].
+
+[9]	Zhang, D., Liu, H., Yang, Y., Wang, H., Liang, Y., Ye, Z., Qin, Z., Huang, T.S. and Zhuang, Y. (2018) 'Neural machine translation with deep attention'. Neural Networks, 100, pp. 24-35. doi: 10.1016/j.neunet.2017.12.010.
