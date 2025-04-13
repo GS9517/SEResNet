@@ -28,6 +28,11 @@ Comparation with YOLO11-cls:
 ```shell
 $ pip install -r requirements.txt
 ```
+### Download Weights
+
+Please refer to the follow link:
+
+> https://github.com/GS9517/SEResNet/releases/latest
 
 ### Train
 ```shell
