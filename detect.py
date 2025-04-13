@@ -1,9 +1,10 @@
 import sys
-if len(sys.argv) > 1:
+if len(sys.argv) > 2:
     image_path = sys.argv[1]
+    weights_path = sys.argv[2]
 else:
-    print("Usage: python detect.py <image_path>")
-    print("No image path specified. Exiting.")
+    print("Usage: python detect.py <image_path> <weights_path>")
+    print("Exiting.")
     sys.exit(1)
 
 import torch
@@ -13,7 +14,7 @@ import numpy as np
 import time
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = torch.load('weights/with_data_augmentation.pt', weights_only=False, map_location=device)
+model = torch.load(weights_path, weights_only=False, map_location=device)
 
 generic_transform = transforms.Compose([
     transforms.Resize((256, 256)),
