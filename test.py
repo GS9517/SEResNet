@@ -3,12 +3,10 @@ import torch
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader, random_split
-import torch.utils.data.dataset
 import os
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
-from SEResNet10 import SEResNet10
 from TransformedSubset import TransformedSubset
 
 path = "./Aerial_Landscapes"
@@ -37,8 +35,9 @@ test_dataset = TransformedSubset(test_dataset, generic_transform)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=4)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = SEResNet10(num_classes=15)
-model = torch.load('runs/train2_without_data_augmentation/models/best_model.pth', weights_only=False).to(device)
+# model = SEResNet10(num_classes=15).to(device)
+# model.load_state_dict(torch.load('runs/train2/models/best_model.pth', weights_only=True))
+model = torch.load('weights/with_data_augmentation.pt', weights_only=False, map_location=device)
 model.eval()
 correct_test = 0
 total_test = 0

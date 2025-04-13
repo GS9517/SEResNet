@@ -192,6 +192,11 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = SEResNet10(num_classes=15).to(device)
+# Print the model's architecture
+print("Model's state_dict:")
+for param_tensor in model.state_dict():
+    print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+model.eval()
 criterion = nn.CrossEntropyLoss()
 num_epochs = 150
 # optimizer
@@ -199,20 +204,16 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
 # optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0005, nesterov=True) # Yolo v11's parameter, I do not know why, dont modify it, it is perfect
 # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=1e-5)
 # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(0.3*num_epochs), int(0.6* num_epochs), int(0.9*num_epochs)], gamma=0.1)
-# Print the total number of parameters in the modeld
-total_params = sum(p.numel() for p in model.parameters())
 
-print(f"Total number of parameters: {total_params}")
+# Print the total number of parameters in the model
+print(f"Total number of parameters: {sum(p.numel() for p in model.parameters())}")
+print()
 
-
+print("=========== Beginning training ===========")
 os.makedirs(f"runs/train{count}/models", exist_ok=True)
+
 # TensorBoard writer
 writer = SummaryWriter(log_dir=f"runs/train{count}/logs")
-
-csv_file = f"runs/train{count}/training_log.csv"
-with open(csv_file, mode='w', newline='') as file:
-    csv_writer = csv.writer(file)
-    csv_writer.writerow(["Epoch", "Training Loss", "Validation Accuracy"])
 
 for epoch in range(num_epochs):
     model.train()
@@ -266,19 +267,13 @@ for epoch in range(num_epochs):
     writer.add_scalar("Loss/Training", epoch_loss, epoch)
     writer.add_scalar("Loss/Validation", val_loss, epoch)
 
-    # Log metrics to CSV
-    with open(csv_file, mode='a', newline='') as file:
-        csv_writer = csv.writer(file)
-        csv_writer.writerow([epoch + 1, epoch_loss, accuracy])
-
-    print(f"Validation: Accuracy: {accuracy:.2f}%, Loss: {val_loss:.2f}")
-
     if accuracy > best_accuracy:
         best_accuracy = accuracy
         torch.save(model.state_dict(), f'runs/train{count}/models/best_model.pth')
 
     # Save model weights every 10 epochs
     if (epoch + 1) % 10 == 0:
+        print("Saving model weights...")
         torch.save(model.state_dict(), f'runs/train{count}/models/model_epoch_{epoch+1}_{accuracy:.2f}.pth')
 
 writer.close()
