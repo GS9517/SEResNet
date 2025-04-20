@@ -17,9 +17,10 @@ Model in `/weights` is trained upon this dataset:
 Comparation with YOLO11-cls:
 |Model|Image size<br>(Pixels)|Accuracy|Params|Flops|
 |-|-|-|-|-|
-|SEResNet10 |256x256|~ 97.8%<br>(@epoch=150)|4.96M|0.35B|
-|YOLO11n-cls|224x224|~ 89.4%                |1.6M |0.5B |
-|YOLO11s-cls|224x224|~ 92.7%                |5.5M |1.6B |
+|SEResNet10  |256x256|~ 97.8%<br>(@epoch=150)|4.96M|0.35G|
+|EfficientNet|256x256|~ 95.5%<br>(@epoch=68) |7.16M|0.54G|
+|YOLO11n-cls |224x224|~ 89.4%                |1.6M |0.5G |
+|YOLO11s-cls |224x224|~ 92.7%                |5.5M |1.6G |
 
 ## How to Use
 
